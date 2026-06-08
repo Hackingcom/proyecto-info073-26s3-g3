@@ -39,10 +39,10 @@ COLUMNAS = 15
 
 
 # Configuración de obstaculos
-CANT_OBSTACULOS = 50
+CANT_OBSTACULOS = 40
 
 # Cuantas manzanas se deben comer para ganar
-MANZANAS_PARA_GANAR = 10
+MANZANAS_PARA_GANAR = 2
 
 # Celdas que conforman el borde del tablero
 BORDE = (
@@ -270,7 +270,7 @@ def avanzar(tablero, pos_jugador, direccion, manzanas_comidas):
 
     if pos_elem == MANZANA:
         ### return "victoria", (ind_nueva_col, ind_nueva_fila)
-        
+        manzanas_comidas += 1
         # Mover al jugador a la nueva casilla
         tablero[ind_actual_fila][ind_actual_col] = VACIO
         tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
@@ -423,6 +423,11 @@ def main():
                 elif estado in (ESTADO_DERROTA, ESTADO_VICTORIA):
                     if evento.key == pygame.K_r:
                         tablero, pos_jugador = reiniciar()
+
+
+                        manzanas_comidas = 0
+
+
                         direccion = (0, 0)
                         tiempo_ultimo_mov = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
