@@ -136,6 +136,13 @@ def refrescar_tablero(screen, tablero):
     # por encima de lo que estaba anteriormente.
     screen.fill("gray30")
 
+
+    ### wall = pygame.image.load("data/assets/blocks/wall.jpg").convert()
+    floor = pygame.image.load("data/assets/blocks/floor.jpg").convert()
+    apple = pygame.image.load("data/assets/elements/apple.png").convert_alpha()
+
+
+
     # Podemos calcular el tamaño en pixeles que tendrá cada
     # casilla al dividir tanto la altura de la pantalla (screen.get_height())
     # como el ancho (screen.get_width()) por la cantidad de filas y columnas respectivamente.
@@ -156,6 +163,9 @@ def refrescar_tablero(screen, tablero):
             if tablero[i][j] == OBSTACULO:
                 # Dibuja un rectángulo en la posición (pos_x, pos_y) y que sea
                 # de tamaño (ancho_elem, alto_elem) y color negro.
+
+                ### screen.blit(wall, [pos_x, pos_y])
+
                 pygame.draw.rect(
                     screen,
                     "black",
@@ -171,16 +181,21 @@ def refrescar_tablero(screen, tablero):
                     radio,
                 )
             elif tablero[i][j] == MANZANA:
-                pygame.draw.rect(
-                    screen,
-                    "red",
+
+                screen.blit(floor, [pos_x, pos_y])
+                screen.blit(apple, [pos_x, pos_y])
+                ### pygame.draw.rect(
+                    ### screen,
+                    ### "red",
                     # Acá reducimos el tamaño del rectángulo
                     # para identificarlo más fácilmente
-                    pygame.Rect(
-                        (pos_x + 10, pos_y + 10),
-                        (ancho_elem - 20, alto_elem - 20),
-                    ),
-                )
+                    ### pygame.Rect(
+                        ### (pos_x + 10, pos_y + 10),
+                        ### (ancho_elem - 20, alto_elem - 20),
+                    ### ),
+                ### )
+            else:
+                screen.blit(floor, [pos_x, pos_y])
 
             # Estamos recorriendo los píxeles de la pantalla, por lo que
             # debemos sumar el ancho y altura en pixeles de cada elemento que
@@ -372,7 +387,7 @@ def main():
     pygame.init()
 
     # Establecemos la resolución de la pantalla.
-    screen = pygame.display.set_mode((800, 800))
+    screen = pygame.display.set_mode((700, 700))
 
     # Establecemos el título de la ventana.
     pygame.display.set_caption("Juego Básico")
