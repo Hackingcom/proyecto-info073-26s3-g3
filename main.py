@@ -42,7 +42,7 @@ COLUMNAS = 15
 CANT_OBSTACULOS = 40
 
 # Cuantas manzanas se deben comer para ganar
-MANZANAS_PARA_GANAR = 2
+MANZANAS_PARA_GANAR = 5
 
 # Celdas que conforman el borde del tablero
 BORDE = (
@@ -137,7 +137,7 @@ def refrescar_tablero(screen, tablero):
     screen.fill("gray30")
 
 
-    ### wall = pygame.image.load("data/assets/blocks/wall.jpg").convert()
+    wall = pygame.image.load("data/assets/blocks/magma.jpg").convert()
     floor = pygame.image.load("data/assets/blocks/floor.jpg").convert()
     apple = pygame.image.load("data/assets/elements/apple.png").convert_alpha()
 
@@ -164,13 +164,13 @@ def refrescar_tablero(screen, tablero):
                 # Dibuja un rectángulo en la posición (pos_x, pos_y) y que sea
                 # de tamaño (ancho_elem, alto_elem) y color negro.
 
-                ### screen.blit(wall, [pos_x, pos_y])
+                screen.blit(wall, [pos_x, pos_y])
 
-                pygame.draw.rect(
-                    screen,
-                    "black",
-                    pygame.Rect((pos_x, pos_y), (ancho_elem, alto_elem)),
-                )
+                ### pygame.draw.rect(
+                    ### screen,
+                    ### "black",
+                    ### pygame.Rect((pos_x, pos_y), (ancho_elem, alto_elem)),
+                ### )
             elif tablero[i][j] == JUGADOR:
                 # Dibujamos un círculo verde en la posición (pos_x + radio, pos_y + radio),
                 # con un radio definido por la variable "radio" (ancho_elem / 2).
