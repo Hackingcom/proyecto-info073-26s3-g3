@@ -89,8 +89,7 @@ def aparecer_aleatorio(tablero, id_elem, incluir_borde=True):
     #     for fila in range(FILAS)
     #     for columna in range(COLUMNAS)
     #     if tablero[fila][columna] == VACIO
-    # ]
-
+    # 
 
     if not incluir_borde:
         vacios = [pos for pos in vacios if pos not in BORDE]
