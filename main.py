@@ -26,9 +26,14 @@ RETRASO = 200
 
 # Códigos de cada elemento del tablero
 VACIO = 0
-OBSTACULO = 1
 JUGADOR = 2
 MANZANA = 3
+
+# Obstaculos NUEVOS
+MAGMA = 4
+HOYO = 5
+BURBUJA = 6
+
 
 # Tamaño del tablero
 # Si se cambian estas constantes, se debe modificar la definición
@@ -39,7 +44,11 @@ COLUMNAS = 15
 
 
 # Configuración de obstaculos
-CANT_OBSTACULOS = 40
+
+CANT_MAGMA = 15
+CANT_HOYO = 8
+CANT_BURBUJA = 5
+
 
 # Cuantas manzanas se deben comer para ganar
 MANZANAS_PARA_GANAR = 5
@@ -118,8 +127,20 @@ def poblar_tablero(tablero):
     Parámetros:
         - tablero: El tablero con sus posiciones actuales.
     """
-    for i in range(CANT_OBSTACULOS):
-        aparecer_aleatorio(tablero, OBSTACULO, incluir_borde=False)
+
+
+
+    for i in range(CANT_MAGMA):
+        aparecer_aleatorio(tablero, MAGMA, incluir_borde=False)
+    
+    for i in range(CANT_HOYO):
+        aparecer_aleatorio(tablero, HOYO, incluir_borde=False)
+    
+    for i in range(CANT_BURBUJA):
+        aparecer_aleatorio(tablero, BURBUJA, incluir_borde=False)
+
+
+
     aparecer_aleatorio(tablero, MANZANA)
 
 
@@ -137,7 +158,12 @@ def refrescar_tablero(screen, tablero):
     screen.fill("gray30")
 
 
-    wall = pygame.image.load("data/assets/blocks/magma.jpg").convert()
+    magma = pygame.image.load("data/assets/blocks/magma.jpg").convert()
+    hoyo = pygame.image.load("data/assets/blocks/hoyo.jpg").convert()
+    burbuja = pygame.image.load("data/assets/blocks/burbuja.jpg").convert()
+
+
+
     floor = pygame.image.load("data/assets/blocks/floor.jpg").convert()
     apple = pygame.image.load("data/assets/elements/apple.png").convert_alpha()
 
@@ -160,17 +186,23 @@ def refrescar_tablero(screen, tablero):
         # Posición en eje "x" en unidad de píxeles.
         pos_x = 0
         for j in range(COLUMNAS):
-            if tablero[i][j] == OBSTACULO:
+            if tablero[i][j] == MAGMA:
                 # Dibuja un rectángulo en la posición (pos_x, pos_y) y que sea
                 # de tamaño (ancho_elem, alto_elem) y color negro.
+                screen.blit(floor, [pos_x, pos_y])
+                screen.blit(magma, [pos_x, pos_y])
 
-                screen.blit(wall, [pos_x, pos_y])
 
-                ### pygame.draw.rect(
-                    ### screen,
-                    ### "black",
-                    ### pygame.Rect((pos_x, pos_y), (ancho_elem, alto_elem)),
-                ### )
+            elif tablero[i][j] == HOYO:
+
+                screen.blit(hoyo, [pos_x, pos_y])
+
+
+            elif tablero[i][j] == BURBUJA:
+
+                screen.blit(burbuja, [pos_x, pos_y])
+
+
             elif tablero[i][j] == JUGADOR:
                 # Dibujamos un círculo verde en la posición (pos_x + radio, pos_y + radio),
                 # con un radio definido por la variable "radio" (ancho_elem / 2).
@@ -279,8 +311,18 @@ def avanzar(tablero, pos_jugador, direccion, manzanas_comidas):
     # Obtenemos el elemento que se encuentre en el tablero en la nueva posición del jugador.
     pos_elem = tablero[ind_nueva_fila][ind_nueva_col]
 
-    if pos_elem == OBSTACULO:
+
+
+    if pos_elem == MAGMA:
         return "derrota", pos_jugador, manzanas_comidas
+    
+    if pos_elem == HOYO:
+        return "derrota", pos_jugador, manzanas_comidas
+    
+    if pos_elem == BURBUJA:
+        return "derrota", pos_jugador, manzanas_comidas
+
+
 
     if pos_elem == MANZANA:
         ### return "victoria", (ind_nueva_col, ind_nueva_fila)

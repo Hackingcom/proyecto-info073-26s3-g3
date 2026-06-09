@@ -1,0 +1,22 @@
+Avance proyecto-info 
+Participantes:
+-Benjamin Salgado
+-Adriano Orbegoso
+-Matias Silva
+-Javier Velasquez
+-Gabriel Veliz
+
+los avances alcanzados en el desarrollo del videojuego basado en el lenguaje Python-pygame.
+-El enfoque principal estuvo en establecer una arquitectura de código sólida. 
+-Implementar los primeros elementos visuales en pantalla
+-Optimizar el entorno de trabajo en equipo usando una extensión del python (live share)
+-El personaje no sale del mapa
+-Movimiento con W, A, S, D.
+-El mapa se muestra completo
+-Elementos colocados de forma aleatoria.
+
+
+Cosas que faltan implementar:
+-elemento que aumentan tamaño
+-Elementos que disminuyen al personaje
+-implementar algunas temáticas visuales
