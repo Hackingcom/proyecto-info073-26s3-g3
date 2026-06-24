@@ -13,6 +13,7 @@ ESTADO_VICTORIA = "victoria"
 
 # Rutas a la carpeta de imágenes de pantallas
 DIR_PANTALLAS = os.path.join(os.path.dirname(__file__), "data", "pantallas")
+DIR_SONIDOS = os.path.join(os.path.dirname(__file__), "data", "sonidos")
 
 # Se específica el nombre del archivo para cada imagen de pantalla.
 # El formato de imagen utilizado puede ser PNG, JPG/JPEG, BMP, o GIF.
@@ -427,7 +428,14 @@ def mostrar_pantalla(screen, nombre_archivo):
 
 def main():
     pygame.init()
-
+## === SONIDO ===
+    pygame.mixer.init() # Esto enciende el motor de audio de pygame
+    
+    # Se cargan los efectos
+    sonido_derrota = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "perdedor.mp3"))
+    sonido_victoria = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "ganador.mp3"))
+    pygame.mixer.music.load(os.path.join(DIR_SONIDOS, "background.mp3 "))
+    # =============================
     # Establecemos la resolución de la pantalla.
     screen = pygame.display.set_mode((700, 700))
 
@@ -467,6 +475,9 @@ def main():
                         # Obtiene tiempo en milisegundos
                         tiempo_ultimo_mov = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
+                        # MUSICA ---
+                        pygame.mixer.music.play(-1) # El -1 hace que se repita sola todo el rato
+                        # MUSICA ----
                         refrescar_tablero(screen, tablero)
                     elif evento.key == pygame.K_i:
                         estado = ESTADO_INSTRUCCIONES
@@ -487,6 +498,10 @@ def main():
                         direccion = (0, 0)
                         tiempo_ultimo_mov = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
+                        # === AUDIO: ARREGLAR REINICIO ===
+                        pygame.mixer.stop()                         # 1. Apaga las trompetas de derrota que estén sonando
+                        pygame.mixer.music.play(-1)                 # 2. Vuelve a reproducir la música de juego desde el principio
+                        # ================================
                         refrescar_tablero(screen, tablero)
 
                     if evento.key == pygame.K_ESCAPE:
@@ -506,9 +521,13 @@ def main():
                 resultado, pos_jugador, manzanas_comidas = avanzar(tablero, pos_jugador, direccion, manzanas_comidas)
                 if resultado == "derrota":
                     estado = ESTADO_DERROTA
+                    pygame.mixer.music.stop() # Detiene la música de fondo primero
+                    sonido_derrota.play()
                     mostrar_pantalla(screen, PANTALLA_DERROTA)
                 elif resultado == "victoria":
                     estado = ESTADO_VICTORIA
+                    pygame.mixer.music.stop() # Detiene la música de juego para que no se superponga
+                    sonido_victoria.play()    # efecto victoria
                     mostrar_pantalla(screen, PANTALLA_VICTORIA)
                 else:
                     tiempo_ultimo_mov = tiempo_actual
