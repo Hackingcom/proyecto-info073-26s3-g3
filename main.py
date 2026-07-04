@@ -180,7 +180,15 @@ def refrescar_tablero(screen, tablero):
     # Como el jugador es un círculo, se necesita el radio.
     radio = ancho_elem / 2
 
-    # Posición en eje "y" en unidad de píxeles.
+
+# --- NUEVO: CARGA Y ESCALA AL PJ---
+    multiplicador = 1.5  # AUMETNAR PARA HACERLO MAS GRANDE
+    nuevo_ancho = int(ancho_elem * multiplicador)
+    nuevo_alto = int(alto_elem * multiplicador)
+
+    textura_jugador = pygame.image.load("data/assets/elements/personaje.png").convert_alpha()
+    textura_jugador = pygame.transform.scale(textura_jugador, (nuevo_ancho, nuevo_alto))
+    # -------------------------------------------------
     pos_y = 0
 
     for i in range(FILAS):
@@ -205,14 +213,22 @@ def refrescar_tablero(screen, tablero):
 
 
             elif tablero[i][j] == JUGADOR:
-                # Dibujamos un círculo verde en la posición (pos_x + radio, pos_y + radio),
-                # con un radio definido por la variable "radio" (ancho_elem / 2).
-                pygame.draw.circle(
-                    screen,
-                    "green",
-                    (pos_x + radio, pos_y + radio),
-                    radio,
-                )
+                # 1. Pintamos el suelo base
+                screen.blit(floor, [pos_x, pos_y])
+                
+                # 2. CALCULAR CENTRO
+                centro_x = pos_x + ancho_elem / 2
+                centro_y = pos_y + alto_elem / 2
+                
+                # 3. CENTRAR
+                rect_jugador = textura_jugador.get_rect(center=(centro_x, centro_y))
+                
+                # 4. SE DIBUJA USANDO LA TEXTURA EN EL CENTRO
+                screen.blit(textura_jugador, rect_jugador)
+            
+            
+            
+            
             elif tablero[i][j] == MANZANA:
 
                 screen.blit(floor, [pos_x, pos_y])
