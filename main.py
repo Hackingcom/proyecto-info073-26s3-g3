@@ -483,7 +483,7 @@ def avanzar(tablero, pos_jugador, direccion, manzanas_comidas, vidas, tiene_escu
 
         # Si no, generar otra manzana y continuar
         aparecer_aleatorio(tablero, MANZANA)
-        return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas, tiene_escudo
+        return "manzana", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas, tiene_escudo
 
 
 
@@ -605,7 +605,7 @@ def main():
     # Se cargan los efectos
     sonido_derrota = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "perdedor.mp3"))
     sonido_victoria = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "ganador.mp3"))
-    sonido_proteina = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "ganarunavida.mp3"))
+    sonido_manzana = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "ganarunavida.mp3"))
     sonido_burbuja = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "perderunavida.mp3"))
     pygame.mixer.music.load(os.path.join(DIR_SONIDOS, "background.mp3 "))
     # =============================
@@ -697,7 +697,7 @@ def main():
 
 
     imagenes["shield"] = pygame.image.load(
-        "data/assets/elements/shield.jpg"
+        "data/assets/elements/shield.png"
     ).convert_alpha()
     imagenes["shield"] = pygame.transform.scale(
         imagenes["shield"],
@@ -890,16 +890,19 @@ def main():
                     mostrar_pantalla(screen, PANTALLA_DERROTA)
                 elif resultado == "victoria":
                     estado = ESTADO_VICTORIA
-
-                    pygame.mixer.music.stop() # Detiene la música de juego para que no se superponga
-                    sonido_victoria.play()    # efecto victoria
-
+                    pygame.mixer.music.stop() 
+                    sonido_victoria.play()
                     mostrar_pantalla(screen, PANTALLA_VICTORIA)
                 
+                # NUEVO: Bloque de la manzana
+                elif resultado == "manzana":
+                    sonido_manzana.play() # Hará el sonido "ganarunavida.mp3"
+                    
+                    tiempo_ultimo_mov = tiempo_actual
+                    refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_juno)
 
                 elif resultado == "proteina":
-                    # --- NUEVO: Reproducir el efecto de GANAR VIDA ---
-                    sonido_proteina.play()
+                    # ELIMINADO: sonido_proteina.play() para que no suene
                     proteina_activa = False
                     tiempo_ultima_proteina = pygame.time.get_ticks()
 
