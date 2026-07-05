@@ -37,11 +37,13 @@ MANZANA = 2
 
 # Obstaculos NUEVOS
 VOLCANO = 3
-HOYO = 4
-BURBUJA = 5
+LAVA = 4
+HOYO = 5
+BURBUJA = 6
 
-PROTEINA = 6
-
+# Objetos 
+PROTEINA = 7
+ESCUDO = 8
 
 # Tamaño del tablero
 # Si se cambian estas constantes, se debe modificar la definición
@@ -53,13 +55,16 @@ VIDAS_MAXIMAS = 3
 
 # Configuración de obstaculos
 
-CANT_MAGMA = 15
+CANT_VOLCANO = 15
 CANT_HOYO = 8
 CANT_BURBUJA = 10
 CANT_PROTEINA = 2
 
+# Bloques del lago de lava
+LAVA_MIN = 20
+LAVA_MAX = 30
 # Cuantas manzanas se deben comer para ganar
-MANZANAS_PARA_GANAR = 1
+MANZANAS_PARA_GANAR = 3
 
 # Celdas que conforman el borde del tablero
 BORDE = (
@@ -127,6 +132,49 @@ def aparecer_aleatorio(tablero, id_elem, incluir_borde=True):
     return columna, fila
 
 
+
+def generar_lago_lava(tablero):
+    
+    """
+    Genera un lago de lava con forma irregular
+    """
+
+    # Punto inicial
+    columna, fila = aparecer_aleatorio(tablero, LAVA, incluir_borde=False)
+
+    if columna == -1:
+        return
+    
+    # Bloques del lago
+
+    posiciones = [(columna,fila)]
+
+    cantidad = random.randint(LAVA_MIN,LAVA_MAX)
+
+    while len(posiciones) < cantidad:
+
+        col, fil = random.choice(posiciones)
+
+        vecinos = [
+            (col + 1, fil),
+            (col - 1, fil),
+            (col, fil + 1),
+            (col, fil - 1)
+        ]
+
+        random.shuffle(vecinos)
+
+        for nueva_col, nueva_fil in vecinos:
+
+            if 0 <= nueva_col < COLUMNAS and 0 <= nueva_fil < FILAS:
+
+                if tablero[nueva_fil][nueva_col] == VACIO:
+
+                    tablero[nueva_fil][nueva_col] = LAVA
+                    posiciones.append((nueva_col, nueva_fil))
+                    break
+
+
 def poblar_tablero(tablero):
     """
     Coloca un obstáculo y la manzana en el tablero.
@@ -136,7 +184,10 @@ def poblar_tablero(tablero):
     """
 
 
-    for i in range(CANT_MAGMA):
+    generar_lago_lava(tablero)
+
+
+    for i in range(CANT_VOLCANO):
         aparecer_aleatorio(tablero, VOLCANO, incluir_borde=False)
     
     for i in range(CANT_HOYO):
@@ -149,7 +200,7 @@ def poblar_tablero(tablero):
     aparecer_aleatorio(tablero, MANZANA)
 
 
-def refrescar_tablero(screen, tablero, vidas, imagenes):
+def refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_juno):
     """
     Dibuja el estado actual del tablero en la pantalla.
 
@@ -188,8 +239,11 @@ def refrescar_tablero(screen, tablero, vidas, imagenes):
     nuevo_ancho = int(ancho_elem * multiplicador)
     nuevo_alto = int(alto_elem * multiplicador)
 
-    textura_jugador = pygame.image.load("data/assets/elements/juno.png").convert_alpha()
-    textura_jugador = pygame.transform.scale(textura_jugador, (nuevo_ancho, nuevo_alto))
+    textura_jugador = pygame.transform.scale(
+        imagenes["juno_" + direccion_juno],
+        (nuevo_ancho, nuevo_alto)
+    )
+
     # -------------------------------------------------
     
     pos_y = 0
@@ -203,6 +257,13 @@ def refrescar_tablero(screen, tablero, vidas, imagenes):
                 # de tamaño (ancho_elem, alto_elem) y color negro.
                 screen.blit(floor, [pos_x, pos_y])
                 screen.blit(volcano, [pos_x, pos_y])
+
+
+            elif tablero[i][j] == LAVA:
+
+
+                screen.blit(floor, [pos_x, pos_y])
+                screen.blit(imagenes["lava"], [pos_x, pos_y])
 
 
             elif tablero[i][j] == HOYO:
@@ -242,7 +303,14 @@ def refrescar_tablero(screen, tablero, vidas, imagenes):
             elif tablero[i][j] == PROTEINA:
                 screen.blit(floor, [pos_x, pos_y]) # <-- AGREGUE SUELO Y RENDERIZA EL SUELO DEBAJO
                 screen.blit(imagenes["protein"], (pos_x, pos_y))
-                
+
+
+
+
+            elif tablero[i][j] == ESCUDO:
+                screen.blit(floor, [pos_x, pos_y])
+                screen.blit(imagenes["shield"], (pos_x, pos_y))    
+
             else:
                 screen.blit(floor, [pos_x, pos_y])
 
@@ -260,14 +328,16 @@ def refrescar_tablero(screen, tablero, vidas, imagenes):
         else:
             screen.blit(heart_empty, (10 + i * 45, 10))
 
+    if tiene_escudo:
 
+        screen.blit(imagenes["shield"], (10 + VIDAS_MAXIMAS * 45 + 20, 5))
 
 
     # Refresca el contenido que se ve en pantalla.
     pygame.display.flip()
 
 
-def cambiar_direccion(keys, direccion_actual):
+def cambiar_direccion(keys, direccion_actual, direccion_juno):
     """
     Cambia la dirección del jugador.
 
@@ -284,29 +354,29 @@ def cambiar_direccion(keys, direccion_actual):
     if keys[pygame.K_w]:
         # La tupla nos indica que horizontalmente (columnas) no hará nada (0) y
         # que verticalmente (filas) disminuirá el índice en el tablero (-1).
-        return (0, -1) 
+        return (0, -1), "up"
 
     # Tecla S
     if keys[pygame.K_s]:
         # En este caso avanzará a través de las filas del tablero.
-        return (0, 1)
+        return (0, 1), "down"
 
     # Tecla A
     if keys[pygame.K_a]:
         # Retrocede por las columnas del tablero.
-        return (-1, 0)
+        return (-1, 0), "left"
 
     # Tecla D
     if keys[pygame.K_d]:
         # Avanza por las columnas del tablero.
-        return (1, 0)
+        return (1, 0), "right"
 
     # Si no se presiona ninguna de las teclas anteriores, la dirección
     # será la misma que la anterior.
-    return direccion_actual
+    return direccion_actual, direccion_juno
 
 
-def avanzar(tablero, pos_jugador, direccion, manzanas_comidas, vidas):
+def avanzar(tablero, pos_jugador, direccion, manzanas_comidas, vidas, tiene_escudo):
     """
     Avanza el jugador un paso en la dirección dada.
 
@@ -334,35 +404,71 @@ def avanzar(tablero, pos_jugador, direccion, manzanas_comidas, vidas):
 
     # Verificamos que no haya choque con el borde del tablero.
     if not (0 <= ind_nueva_col < COLUMNAS and 0 <= ind_nueva_fila < FILAS):
-        return "derrota", pos_jugador, manzanas_comidas, vidas
+        return "derrota", pos_jugador, manzanas_comidas, vidas, tiene_escudo
 
     # Obtenemos el elemento que se encuentre en el tablero en la nueva posición del jugador.
     pos_elem = tablero[ind_nueva_fila][ind_nueva_col]
 
 
     if pos_elem == VOLCANO:
-        return "derrota", pos_jugador, manzanas_comidas, vidas
-    
+
+        if tiene_escudo:
+
+            tiene_escudo = False
+
+            tablero[ind_actual_fila][ind_actual_col] = VACIO
+            tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
+
+            return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas, tiene_escudo
+        
+        return "derrota", pos_jugador, manzanas_comidas, vidas, tiene_escudo
+
+
+    if pos_elem == LAVA:
+
+        if tiene_escudo:
+
+            tiene_escudo = False
+
+            tablero[ind_actual_fila][ind_actual_col] = VACIO
+            tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
+
+            return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas, tiene_escudo
+        
+        return "derrota", pos_jugador, manzanas_comidas, vidas, tiene_escudo
+
+
+
     if pos_elem == HOYO:
-        return "derrota", pos_jugador, manzanas_comidas, vidas
+
+        if tiene_escudo:
+
+            tiene_escudo = False
+
+            tablero[ind_actual_fila][ind_actual_col] = VACIO
+            tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
+
+            return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas, tiene_escudo
+        
+        return "derrota", pos_jugador, manzanas_comidas, vidas, tiene_escudo
     
     if pos_elem == BURBUJA:
-        vidas -= 1
+
+        if tiene_escudo:
+
+            tiene_escudo = False
+        
+        else:
+
+            vidas -= 1
 
         tablero[ind_actual_fila][ind_actual_col] = VACIO
         tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
 
-        # sta comprobación debe ir ANTES del return de la burbuja
         if vidas <= 0:
-            return "derrota", pos_jugador, manzanas_comidas, vidas
-        
-        # Si aún le quedan vidas, RECIEN SE RETORNA BURBUJA NO ANTES O NO FUNCIONA
-        return "burbuja", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas
-        if vidas <= 0:
-            return "derrota", pos_jugador, manzanas_comidas, vidas
-        
+            return "derrota", pos_jugador, manzanas_comidas, vidas, tiene_escudo
 
-        return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas
+        return "burbuja", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas, tiene_escudo      
 
     if pos_elem == MANZANA:
         ### return "victoria", (ind_nueva_col, ind_nueva_fila)
@@ -373,11 +479,13 @@ def avanzar(tablero, pos_jugador, direccion, manzanas_comidas, vidas):
 
         # Si llegamos al objetivo, victoria
         if manzanas_comidas >= MANZANAS_PARA_GANAR:
-            return "victoria", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas
+            return "victoria", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas, tiene_escudo
 
         # Si no, generar otra manzana y continuar
         aparecer_aleatorio(tablero, MANZANA)
-        return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas
+        return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas, tiene_escudo
+
+
 
     elif pos_elem == PROTEINA:
 
@@ -387,14 +495,26 @@ def avanzar(tablero, pos_jugador, direccion, manzanas_comidas, vidas):
         tablero[ind_actual_fila][ind_actual_col] = VACIO
         tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
 
-        return "proteina", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas
+        return "proteina", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas, tiene_escudo
+
+
+
+    elif pos_elem == ESCUDO:
+
+        tiene_escudo = True
+    
+        tablero[ind_actual_fila][ind_actual_col] = VACIO
+        tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
+
+        return "escudo", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas, tiene_escudo
+
 
 
     # Movimiento normal, si es que no encontramos manzana ni obstáculo.
     tablero[ind_actual_fila][ind_actual_col] = VACIO
     tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
 
-    return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas
+    return "ok", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas, tiene_escudo
 
 
 def reiniciar():
@@ -513,7 +633,7 @@ def main():
     # Se redimensiona la manzana usando smoothscale para mantener mejor la textura
     imagenes["apple"] = pygame.transform.smoothscale(
         imagenes["apple"],
-        (49, 49)
+        (40, 40)
     )
 
 
@@ -524,6 +644,16 @@ def main():
         imagenes["volcano"],
         (49,49)
     )
+
+
+    imagenes["lava"] = pygame.image.load(
+        "data/assets/blocks/lava.png"
+    ).convert_alpha()
+    imagenes["lava"] = pygame.transform.scale(
+        imagenes["lava"],
+        (49,49)
+    )
+
 
     imagenes["hole"] = pygame.image.load(
         "data/assets/blocks/hole.jpg"
@@ -566,6 +696,34 @@ def main():
     )
 
 
+    imagenes["shield"] = pygame.image.load(
+        "data/assets/elements/shield.jpg"
+    ).convert_alpha()
+    imagenes["shield"] = pygame.transform.scale(
+        imagenes["shield"],
+        (49,49)
+    )
+
+
+    #----------------------------------------------
+    # JUNO
+    imagenes["juno_up"] = pygame.image.load(
+        "data/assets/elements/juno_up.png"
+    ).convert_alpha()
+
+    imagenes["juno_down"] = pygame.image.load(
+        "data/assets/elements/juno_down.png"
+    ).convert_alpha()
+
+    imagenes["juno_left"] = pygame.image.load(
+        "data/assets/elements/juno_left.png"
+    ).convert_alpha()
+
+    imagenes["juno_right"] = pygame.image.load(
+        "data/assets/elements/juno_right.png"
+    ).convert_alpha() 
+    #----------------------------------------------
+
 
     running = True
 
@@ -573,14 +731,24 @@ def main():
     tablero = []
     pos_jugador = (0, 0)
     direccion = (0, 0)
+
+    direccion_juno = "down"
+
     tiempo_ultimo_mov = 0
     
     manzanas_comidas = 0
     vidas = VIDAS_MAXIMAS
 
-
-    tiempo_ultima_proteina = pygame.time.get_ticks()
     proteina_activa = False
+    tiempo_ultima_proteina = pygame.time.get_ticks()
+
+    escudo_activo = False
+    tiempo_ultimo_escudo = pygame.time.get_ticks()
+    tiene_escudo = False
+
+
+
+
 
     mostrar_pantalla(screen, PANTALLA_INICIO)
 
@@ -599,6 +767,17 @@ def main():
                         proteina_activa = True
                         tiempo_ultima_proteina = pygame.time.get_ticks()
 
+
+
+        if estado == ESTADO_JUGANDO:
+                
+                if not escudo_activo:
+
+                    if pygame.time.get_ticks() - tiempo_ultimo_escudo >= 1000:
+
+                        aparecer_aleatorio(tablero, ESCUDO)
+                        escudo_activo = True
+                        tiempo_ultimo_escudo = pygame.time.get_ticks()
 
 
         # Se analizan los eventos del bucle actual.
@@ -620,7 +799,16 @@ def main():
                         proteina_activa = False
                         tiempo_ultima_proteina = pygame.time.get_ticks()
 
+
+                        escudo_activo = False
+                        tiempo_ultimo_escudo = pygame.time.get_ticks()
+                        tiene_escudo = False
+
+
                         direccion = (0, 0)
+
+                        direccion_juno = "down"
+
                         # Obtiene tiempo en milisegundos
                         tiempo_ultimo_mov = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
@@ -629,7 +817,7 @@ def main():
                         pygame.mixer.music.play(-1) # El -1 hace que se repita sola todo el rato
                         # MUSICA ----
 
-                        refrescar_tablero(screen, tablero, vidas, imagenes)
+                        refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_juno)
                     elif evento.key == pygame.K_i:
                         estado = ESTADO_INSTRUCCIONES
                         mostrar_pantalla(screen, PANTALLA_INSTRUCCIONES)
@@ -649,7 +837,16 @@ def main():
                         proteina_activa = False
                         tiempo_ultima_proteina = pygame.time.get_ticks()
 
+
+                        escudo_activo = False
+                        tiempo_ultimo_escudo = pygame.time.get_ticks()
+                        tiene_escudo = False
+
+
                         direccion = (0, 0)
+
+                        direccion_juno = "down"
+
                         tiempo_ultimo_mov = pygame.time.get_ticks()
                         estado = ESTADO_JUGANDO
 
@@ -658,14 +855,17 @@ def main():
                         pygame.mixer.music.play(-1) 
                         # ================================
 
-                        refrescar_tablero(screen, tablero, vidas, imagenes)
+                        refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_juno)
 
                     if evento.key == pygame.K_ESCAPE:
                         estado = ESTADO_INICIO
                         mostrar_pantalla(screen, PANTALLA_INICIO)
 
                 elif estado == ESTADO_JUGANDO:
-                    direccion = cambiar_direccion(pygame.key.get_pressed(), direccion)
+                    direccion, direccion_juno = cambiar_direccion(
+                        pygame.key.get_pressed(), 
+                        direccion,
+                        direccion_juno)
 
         if estado == ESTADO_JUGANDO:
             tiempo_actual = pygame.time.get_ticks()  # En milisegundos
@@ -674,12 +874,13 @@ def main():
             # entonces no se avanzará en el tablero.
             if direccion != (0, 0) and tiempo_actual - tiempo_ultimo_mov >= RETRASO:
                 ### resultado, pos_jugador = avanzar(tablero, pos_jugador, direccion)
-                resultado, pos_jugador, manzanas_comidas, vidas = avanzar(
+                resultado, pos_jugador, manzanas_comidas, vidas, tiene_escudo = avanzar(
                     tablero, 
                     pos_jugador, 
                     direccion, 
                     manzanas_comidas, 
-                    vidas)
+                    vidas,
+                    tiene_escudo)
                 if resultado == "derrota":
                     estado = ESTADO_DERROTA
 
@@ -703,20 +904,33 @@ def main():
                     tiempo_ultima_proteina = pygame.time.get_ticks()
 
                     tiempo_ultimo_mov = tiempo_actual
-                    refrescar_tablero(screen, tablero, vidas, imagenes)
+                    refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_juno)
                 
+
+
+                elif resultado == "escudo":
+
+                    tiene_escudo = True
+                    escudo_activo = False
+                    tiempo_ultimo_escudo = pygame.time.get_ticks()
+                    
+                    tiempo_ultimo_mov = tiempo_actual
+                    refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_juno)
+
+
+
                 # --- NUEVO: Bloque para q funcione lo del sonido ---
                 elif resultado == "burbuja":
                     sonido_burbuja.play()
                     
                     tiempo_ultimo_mov = tiempo_actual
-                    refrescar_tablero(screen, tablero, vidas, imagenes)
+                    refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_juno)
                 # ----------------------------------------------
 
                 
                 else:
                     tiempo_ultimo_mov = tiempo_actual
-                    refrescar_tablero(screen, tablero,vidas, imagenes)
+                    refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_juno)
 
     pygame.quit()
 
