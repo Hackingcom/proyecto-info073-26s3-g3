@@ -211,7 +211,7 @@ def refrescar_tablero(screen, tablero, vidas, imagenes):
 
 
             elif tablero[i][j] == BURBUJA:
-
+                screen.blit(floor, [pos_x, pos_y]) # <-- PARA RENDERIZAR EL SUELO, CAMBIAR EL PNG
                 screen.blit(bubble, [pos_x, pos_y])
 
 
@@ -229,22 +229,18 @@ def refrescar_tablero(screen, tablero, vidas, imagenes):
                 # 4. SE DIBUJA USANDO LA TEXTURA EN EL CENTRO
                 screen.blit(textura_jugador, rect_jugador)
             
+
             
             elif tablero[i][j] == MANZANA:
 
                 screen.blit(floor, [pos_x, pos_y])
                 screen.blit(apple, [pos_x, pos_y])
-                ### pygame.draw.rect(
-                    ### screen,
-                    ### "red",
-                    # Acá reducimos el tamaño del rectángulo
-                    # para identificarlo más fácilmente
-                    ### pygame.Rect(
-                        ### (pos_x + 10, pos_y + 10),
-                        ### (ancho_elem - 20, alto_elem - 20),
-                    ### ),
-                ### )
+              
+
+
+
             elif tablero[i][j] == PROTEINA:
+                screen.blit(floor, [pos_x, pos_y]) # <-- AGREGUE SUELO Y RENDERIZA EL SUELO DEBAJO
                 screen.blit(imagenes["protein"], (pos_x, pos_y))
                 
             else:
@@ -351,15 +347,17 @@ def avanzar(tablero, pos_jugador, direccion, manzanas_comidas, vidas):
         return "derrota", pos_jugador, manzanas_comidas, vidas
     
     if pos_elem == BURBUJA:
-
-
         vidas -= 1
-
 
         tablero[ind_actual_fila][ind_actual_col] = VACIO
         tablero[ind_nueva_fila][ind_nueva_col] = JUGADOR
 
-
+        # sta comprobación debe ir ANTES del return de la burbuja
+        if vidas <= 0:
+            return "derrota", pos_jugador, manzanas_comidas, vidas
+        
+        # Si aún le quedan vidas, RECIEN SE RETORNA BURBUJA NO ANTES O NO FUNCIONA
+        return "burbuja", (ind_nueva_col, ind_nueva_fila), manzanas_comidas, vidas
         if vidas <= 0:
             return "derrota", pos_jugador, manzanas_comidas, vidas
         
@@ -487,6 +485,8 @@ def main():
     # Se cargan los efectos
     sonido_derrota = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "perdedor.mp3"))
     sonido_victoria = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "ganador.mp3"))
+    sonido_proteina = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "ganarunavida.mp3"))
+    sonido_burbuja = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "perderunavida.mp3"))
     pygame.mixer.music.load(os.path.join(DIR_SONIDOS, "background.mp3 "))
     # =============================
 
@@ -509,6 +509,12 @@ def main():
     imagenes["apple"] = pygame.image.load(
         "data/assets/elements/apple.png"
     ).convert_alpha()
+    
+    # Se redimensiona la manzana usando smoothscale para mantener mejor la textura
+    imagenes["apple"] = pygame.transform.smoothscale(
+        imagenes["apple"],
+        (49, 49)
+    )
 
 
     imagenes["volcano"] = pygame.image.load(
@@ -529,7 +535,7 @@ def main():
 
 
     imagenes["bubble"] = pygame.image.load(
-        "data/assets/elements/bubble.jpg"
+        "data/assets/elements/bubble.png" # Cambio a .png
     ).convert_alpha()
 
 
@@ -552,7 +558,7 @@ def main():
 
 
     imagenes["protein"] = pygame.image.load(
-        "data/assets/elements/protein.jpg"
+        "data/assets/elements/protein.png"
     ).convert_alpha()
     imagenes["protein"] = pygame.transform.scale(
         imagenes["protein"],
@@ -691,12 +697,21 @@ def main():
                 
 
                 elif resultado == "proteina":
-
+                    # --- NUEVO: Reproducir el efecto de GANAR VIDA ---
+                    sonido_proteina.play()
                     proteina_activa = False
                     tiempo_ultima_proteina = pygame.time.get_ticks()
 
                     tiempo_ultimo_mov = tiempo_actual
                     refrescar_tablero(screen, tablero, vidas, imagenes)
+                
+                # --- NUEVO: Bloque para q funcione lo del sonido ---
+                elif resultado == "burbuja":
+                    sonido_burbuja.play()
+                    
+                    tiempo_ultimo_mov = tiempo_actual
+                    refrescar_tablero(screen, tablero, vidas, imagenes)
+                # ----------------------------------------------
 
                 
                 else:
