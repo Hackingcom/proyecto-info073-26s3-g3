@@ -55,14 +55,19 @@ VIDAS_MAXIMAS = 3
 
 # Configuración de obstaculos
 
-CANT_VOLCANO = 15
-CANT_HOYO = 8
-CANT_BURBUJA = 10
+CANT_VOLCANO = 10
+CANT_HOYO = 15
+CANT_BURBUJA = 15
 CANT_PROTEINA = 2
 
-# Bloques del lago de lava
-LAVA_MIN = 20
-LAVA_MAX = 30
+# Tamaño min/max de lago de lava
+LAVA_MIN = 10
+LAVA_MAX = 20
+
+# Cantidad min/max de lago de lava
+LAGOS_MIN = 1
+LAGOS_MAX = 3
+
 # Cuantas manzanas se deben comer para ganar
 MANZANAS_PARA_GANAR = 3
 
@@ -99,8 +104,15 @@ def aparecer_aleatorio(tablero, id_elem, incluir_borde=True):
             elem_pos = tablero[fila][columna]
 
             if elem_pos == VACIO:
-                # Al utilizar los paréntesis () dentro de la función, lo estaremos
-                # añadiendo como una tupla con la estructura (columna, fila).
+
+                if id_elem in (VOLCANO, HOYO, BURBUJA, JUGADOR):
+                    
+                    if al_lado_de_lava(tablero, columna, fila):
+                        continue
+
+                    if al_lado_del_mismo(tablero, columna, fila, id_elem):
+                        continue
+
                 vacios.append((columna, fila))
 
     # También se puede utilizar comprensión de listas para rellenar el arreglo
@@ -133,7 +145,7 @@ def aparecer_aleatorio(tablero, id_elem, incluir_borde=True):
 
 
 
-def generar_lago_lava(tablero):
+def generar_lago_lava(tablero, cantidad):
     
     """
     Genera un lago de lava con forma irregular
@@ -149,7 +161,7 @@ def generar_lago_lava(tablero):
 
     posiciones = [(columna,fila)]
 
-    cantidad = random.randint(LAVA_MIN,LAVA_MAX)
+
 
     while len(posiciones) < cantidad:
 
@@ -175,6 +187,145 @@ def generar_lago_lava(tablero):
                     break
 
 
+
+def dibujar_bordes_lava(screen, tablero, imagenes, ancho_elem, alto_elem):
+
+    for fila in range(FILAS):
+
+        for columna in range(COLUMNAS):
+
+            # Casillas vacías
+
+            if tablero[fila][columna] == LAVA:
+                continue
+            if tablero[fila][columna] == VOLCANO:
+                continue
+            if tablero[fila][columna] == HOYO:
+                continue
+
+            x = columna * ancho_elem
+            y = fila * alto_elem
+
+            arriba = fila > 0 and tablero[fila - 1][columna] == LAVA
+            abajo = fila < FILAS - 1 and tablero[fila + 1][columna] == LAVA
+            izquierda = columna > 0 and tablero[fila][columna - 1] == LAVA
+            derecha = columna < COLUMNAS - 1 and tablero[fila][columna + 1] == LAVA
+
+            if not (arriba or abajo or izquierda or derecha):
+                continue
+
+            # Todos los lados
+
+            if arriba and abajo and izquierda and derecha:
+
+                screen.blit(imagenes["lava_all_sides"], (x, y))
+
+
+            # Tres lados
+
+            elif arriba and izquierda and derecha:
+                
+                screen.blit(imagenes["lava_top_both"], (x, y))
+
+            elif abajo and izquierda and derecha:
+                
+                screen.blit(imagenes["lava_bottom_both"], (x, y))
+
+            elif izquierda and arriba and abajo:
+                
+                screen.blit(imagenes["lava_left_both"], (x, y))
+
+            elif derecha and arriba and abajo:
+                
+                screen.blit(imagenes["lava_right_both"], (x, y))
+
+
+            # Dos lados
+
+            elif arriba and izquierda:
+                
+                screen.blit(imagenes["lava_top_left"], (x, y))
+
+            elif arriba and derecha:
+                
+                screen.blit(imagenes["lava_top_right"], (x, y))
+
+            elif abajo and izquierda:
+                
+                screen.blit(imagenes["lava_bottom_left"], (x, y))
+
+            elif abajo and derecha:
+                
+                screen.blit(imagenes["lava_bottom_right"], (x, y))
+
+            elif arriba and abajo:
+                
+                screen.blit(imagenes["lava_top_bottom"], (x, y))
+
+            elif izquierda and derecha:
+                
+                screen.blit(imagenes["lava_left_right"], (x, y))
+
+            # Un lado
+
+            elif arriba:
+                
+                screen.blit(imagenes["lava_top"], (x, y))
+
+            elif abajo:
+                
+                screen.blit(imagenes["lava_bottom"], (x, y))
+
+            elif izquierda:
+                
+                screen.blit(imagenes["lava_left"], (x, y))
+
+            elif derecha:
+                
+                screen.blit(imagenes["lava_right"], (x, y))
+
+
+
+def al_lado_de_lava(tablero, columna, fila):
+
+    vecinos = [
+        (columna + 1, fila),
+        (columna - 1, fila),
+        (columna, fila + 1),
+        (columna, fila - 1)
+    ]
+
+    for col, fil in vecinos:
+
+        if 0 <= col < COLUMNAS and 0 <= fil < FILAS:
+            if tablero[fil][col] == LAVA:
+                return True
+    
+    return False
+
+
+def al_lado_del_mismo(tablero, columna, fila, id_elem):
+
+    vecinos = [
+        (columna + 1, fila),
+        (columna - 1, fila),
+        (columna, fila + 1),
+        (columna, fila - 1),
+
+        (columna + 1, fila + 1),
+        (columna + 1, fila - 1),
+        (columna - 1, fila + 1),
+        (columna - 1, fila - 1)
+    ]
+
+    for col, fil in vecinos:
+
+        if 0 <= col < COLUMNAS and 0 <= fil < FILAS:
+            if tablero[fil][col] == id_elem:
+                return True
+    
+    return False
+
 def poblar_tablero(tablero):
     """
     Coloca un obstáculo y la manzana en el tablero.
@@ -184,8 +335,13 @@ def poblar_tablero(tablero):
     """
 
 
-    generar_lago_lava(tablero)
+    cantidad_lagos = random.randint(LAGOS_MIN, LAGOS_MAX)
 
+    for i in range(cantidad_lagos):
+
+        tamaño = random.randint(LAVA_MIN, LAVA_MAX)
+
+        generar_lago_lava(tablero, tamaño)
 
     for i in range(CANT_VOLCANO):
         aparecer_aleatorio(tablero, VOLCANO, incluir_borde=False)
@@ -209,8 +365,6 @@ def refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_
         - tablero: El tablero con sus posiciones actuales.
     """
 
-    # Rellena la pantalla con el color gris, básicamente pintando
-    # por encima de lo que estaba anteriormente.
     screen.fill("gray30")
 
 
@@ -224,17 +378,14 @@ def refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_
     heart_empty = imagenes["heart_empty"]
 
 
-    # Podemos calcular el tamaño en pixeles que tendrá cada
-    # casilla al dividir tanto la altura de la pantalla (screen.get_height())
-    # como el ancho (screen.get_width()) por la cantidad de filas y columnas respectivamente.
-    # Por ejemplo en este caso alto_elem sería 800 / 15 = 53.3, lo que nos indica que la
-    # altura de cada elemento es de 53.3 píxeles.
+
+
     alto_elem = screen.get_height() / FILAS
     ancho_elem = screen.get_width() / COLUMNAS
-    # Como el jugador es un círculo, se necesita el radio.
-    radio = ancho_elem / 2
 
-# --- NUEVO: CARGA Y ESCALA AL PJ---
+    #-------------------------------
+    # JUGADOR (se escala UNA vez)
+    #-------------------------------
     multiplicador = 1.5  # AUMETNAR PARA HACERLO MAS GRANDE
     nuevo_ancho = int(ancho_elem * multiplicador)
     nuevo_alto = int(alto_elem * multiplicador)
@@ -243,9 +394,12 @@ def refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_
         imagenes["juno_" + direccion_juno],
         (nuevo_ancho, nuevo_alto)
     )
-
-    # -------------------------------------------------
     
+
+    #-------------------------------
+    # CAPA 1 Y 2 DEL TABLERO    
+    #-------------------------------
+
     pos_y = 0
 
     for i in range(FILAS):
@@ -253,14 +407,13 @@ def refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_
         pos_x = 0
         for j in range(COLUMNAS):
             if tablero[i][j] == VOLCANO:
-                # Dibuja un rectángulo en la posición (pos_x, pos_y) y que sea
-                # de tamaño (ancho_elem, alto_elem) y color negro.
+
+
                 screen.blit(floor, [pos_x, pos_y])
-                screen.blit(volcano, [pos_x, pos_y])
+                screen.blit(imagenes["volcano"], [pos_x, pos_y])
 
 
             elif tablero[i][j] == LAVA:
-
 
                 screen.blit(floor, [pos_x, pos_y])
                 screen.blit(imagenes["lava"], [pos_x, pos_y])
@@ -276,6 +429,22 @@ def refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_
                 screen.blit(bubble, [pos_x, pos_y])
 
 
+            elif tablero[i][j] == MANZANA:
+
+                screen.blit(floor, [pos_x, pos_y])
+                screen.blit(apple, [pos_x, pos_y])
+              
+
+            elif tablero[i][j] == PROTEINA:
+                screen.blit(floor, [pos_x, pos_y]) # <-- AGREGUE SUELO Y RENDERIZA EL SUELO DEBAJO
+                screen.blit(imagenes["protein"], (pos_x, pos_y))
+
+
+            elif tablero[i][j] == ESCUDO:
+                screen.blit(floor, [pos_x, pos_y])
+                screen.blit(imagenes["shield"], (pos_x, pos_y)) 
+
+
             elif tablero[i][j] == JUGADOR:
                 # 1. Pintamos el suelo base
                 screen.blit(floor, [pos_x, pos_y])
@@ -289,52 +458,56 @@ def refrescar_tablero(screen, tablero, vidas, imagenes, tiene_escudo, direccion_
                 
                 # 4. SE DIBUJA USANDO LA TEXTURA EN EL CENTRO
                 screen.blit(textura_jugador, rect_jugador)
-            
 
-            
-            elif tablero[i][j] == MANZANA:
-
-                screen.blit(floor, [pos_x, pos_y])
-                screen.blit(apple, [pos_x, pos_y])
-              
-
-
-
-            elif tablero[i][j] == PROTEINA:
-                screen.blit(floor, [pos_x, pos_y]) # <-- AGREGUE SUELO Y RENDERIZA EL SUELO DEBAJO
-                screen.blit(imagenes["protein"], (pos_x, pos_y))
-
-
-
-
-            elif tablero[i][j] == ESCUDO:
-                screen.blit(floor, [pos_x, pos_y])
-                screen.blit(imagenes["shield"], (pos_x, pos_y))    
 
             else:
+
                 screen.blit(floor, [pos_x, pos_y])
 
-            # Estamos recorriendo los píxeles de la pantalla, por lo que
-            # debemos sumar el ancho y altura en pixeles de cada elemento que
-            # ya hayamos recorrido para avanzar al siguiente.
             pos_x += ancho_elem
         pos_y += alto_elem
 
 
+    #-------------------------------
+    # CAPA 3 DEL TABLERO (bordes de lava)  
+    #-------------------------------   
+   
+    dibujar_bordes_lava(
+        screen,
+        tablero,
+        imagenes,
+        ancho_elem,
+        alto_elem
+    )
+
+
+    #-------------------------------
+    # CAPA 4 DEL TABLERO (vidas y escudo) 
+    #------------------------------- 
+
     for i in range(VIDAS_MAXIMAS):
 
         if i < vidas:
-            screen.blit(heart_full, (10 + i * 45, 10))
+            screen.blit(heart_full, (10 + i * 45 - 10, 1))
         else:
-            screen.blit(heart_empty, (10 + i * 45, 10))
+            screen.blit(heart_empty, (10 + i * 45 - 10, 1))
 
     if tiene_escudo:
 
-        screen.blit(imagenes["shield"], (10 + VIDAS_MAXIMAS * 45 + 20, 5))
+        escudo_pequeño = pygame.transform.scale(
+            imagenes["shield"],
+            (35, 35)
+        )
 
+        screen.blit(escudo_pequeño, (10 + VIDAS_MAXIMAS * 45 + 5, 18))
+
+    #-------------------------------
+    # FINAL 
+    #------------------------------- 
 
     # Refresca el contenido que se ve en pantalla.
     pygame.display.flip()
+
 
 
 def cambiar_direccion(keys, direccion_actual, direccion_juno):
@@ -607,7 +780,7 @@ def main():
     sonido_victoria = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "ganador.mp3"))
     sonido_manzana = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "ganarunavida.mp3"))
     sonido_burbuja = pygame.mixer.Sound(os.path.join(DIR_SONIDOS, "perderunavida.mp3"))
-    pygame.mixer.music.load(os.path.join(DIR_SONIDOS, "background.mp3 "))
+    pygame.mixer.music.load(os.path.join(DIR_SONIDOS, "background.mp3"))
     # =============================
 
     # Establecemos la resolución de la pantalla.
@@ -725,6 +898,150 @@ def main():
     #----------------------------------------------
 
 
+
+
+    # Suelos con LAVA
+    #----------------------------------------------
+    #----------------------------------------------
+    imagenes["lava_top"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_top.jpeg"
+    ).convert_alpha()
+    imagenes["lava_top"] = pygame.transform.scale(
+        imagenes["lava_top"],
+        (49,49)
+    )
+
+
+    imagenes["lava_bottom"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_bottom.jpeg"
+    ).convert_alpha()
+    imagenes["lava_bottom"] = pygame.transform.scale(
+        imagenes["lava_bottom"],
+        (49,49)
+    )
+
+
+    imagenes["lava_left"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_left.jpeg"
+    ).convert_alpha()
+    imagenes["lava_left"] = pygame.transform.scale(
+        imagenes["lava_left"],
+        (49,49)
+    )
+
+
+    imagenes["lava_right"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_right.jpeg"
+    ).convert_alpha() 
+    imagenes["lava_right"] = pygame.transform.scale(
+        imagenes["lava_right"],
+        (49,49)
+    )
+
+
+    imagenes["lava_top_left"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_top_left.jpeg"
+    ).convert_alpha()
+    imagenes["lava_top_left"] = pygame.transform.scale(
+        imagenes["lava_top_left"],
+        (49,49)
+    )
+
+
+    imagenes["lava_top_right"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_top_right.jpeg"
+    ).convert_alpha()
+    imagenes["lava_top_right"] = pygame.transform.scale(
+        imagenes["lava_top_right"],
+        (49,49)
+    )
+
+
+    imagenes["lava_bottom_left"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_bottom_left.jpeg"
+    ).convert_alpha()
+    imagenes["lava_bottom_left"] = pygame.transform.scale(
+        imagenes["lava_bottom_left"],
+        (49,49)
+    )
+
+
+    imagenes["lava_bottom_right"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_bottom_right.jpeg"
+    ).convert_alpha()
+    imagenes["lava_bottom_right"] = pygame.transform.scale(
+        imagenes["lava_bottom_right"],
+        (49,49)
+    )
+
+
+    imagenes["lava_top_both"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_top_both.jpeg"
+    ).convert_alpha()
+    imagenes["lava_top_both"] = pygame.transform.scale(
+        imagenes["lava_top_both"],
+        (49,49)
+    )
+
+
+    imagenes["lava_bottom_both"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_bottom_both.jpeg"
+    ).convert_alpha()
+    imagenes["lava_bottom_both"] = pygame.transform.scale(
+        imagenes["lava_bottom_both"],
+        (49,49)
+    )
+
+
+    imagenes["lava_left_both"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_left_both.jpeg"
+    ).convert_alpha()
+    imagenes["lava_left_both"] = pygame.transform.scale(
+        imagenes["lava_left_both"],
+        (49,49)
+    )
+
+    
+    imagenes["lava_right_both"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_right_both.jpeg"
+    ).convert_alpha()
+    imagenes["lava_right_both"] = pygame.transform.scale(
+        imagenes["lava_right_both"],
+        (49,49)
+    )
+
+
+    imagenes["lava_all_sides"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_all_sides.png"
+    ).convert_alpha()
+    imagenes["lava_all_sides"] = pygame.transform.scale(
+        imagenes["lava_all_sides"],
+        (49,49)
+    )
+
+
+    imagenes["lava_top_bottom"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_top_bottom.png"
+    ).convert_alpha()
+    imagenes["lava_top_bottom"] = pygame.transform.scale(
+        imagenes["lava_top_bottom"],
+        (49,49)
+    )
+
+
+    imagenes["lava_left_right"] = pygame.image.load(
+        "data/assets/blocks/lava_floor/lava_left_right.png"
+    ).convert_alpha()
+    imagenes["lava_left_right"] = pygame.transform.scale(
+        imagenes["lava_left_right"],
+        (49,49)
+    )
+    #----------------------------------------------
+    #----------------------------------------------
+
+
+
+
     running = True
 
     estado = ESTADO_INICIO
@@ -761,7 +1078,7 @@ def main():
                 
                 if not proteina_activa:
 
-                    if pygame.time.get_ticks() - tiempo_ultima_proteina >= 10000:
+                    if pygame.time.get_ticks() - tiempo_ultima_proteina >= 5000:
 
                         aparecer_aleatorio(tablero, PROTEINA)
                         proteina_activa = True
@@ -773,7 +1090,7 @@ def main():
                 
                 if not escudo_activo:
 
-                    if pygame.time.get_ticks() - tiempo_ultimo_escudo >= 1000:
+                    if pygame.time.get_ticks() - tiempo_ultimo_escudo >= 5000:
 
                         aparecer_aleatorio(tablero, ESCUDO)
                         escudo_activo = True
